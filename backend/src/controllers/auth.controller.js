@@ -1,6 +1,7 @@
 import bcrypt from "bcryptjs";
 import {db} from "../libs/db.js";
 import jwt from "jsonwebtoken";
+import { UserRole } from "../generated/prisma/index.js";
 
 export const register = async (req, res) => {
     const { username, email, password } = req.body;
@@ -15,12 +16,15 @@ export const register = async (req, res) => {
             return res.status(400).json({message: "User already exists"});
         }
         const hashedPassword = await bcrypt.hash(password, 10);
+        // Change username to name in your db.user.create call
         const newUser = await db.user.create({
+            data: {
             email,
-            username,
+            username: username, // 👈 Maps the input username to the 'username' column in Prisma
             password: hashedPassword,
-            role:UserRole.USER
-        });
+        // role: "USER"  // Note: Your error logs show 'roles' plural, remove if unused
+    }
+});
 
         const token = jwt.sign({ id: newUser.id}, process.env.JWT_SECRET, { expiresIn: '7d' });
 
@@ -44,6 +48,9 @@ export const register = async (req, res) => {
 
 
     }catch(error){
+
+        // res.status(500).json({ message: "Error occurred while registering user" });
+        console.error("Registration error details:", error); 
         res.status(500).json({ message: "Error occurred while registering user" });
     }
 
@@ -73,11 +80,11 @@ export const login = async (req, res) => {
     res.status(201).json({
             message: "User logged in successfully",
             user:{
-                id: newUser.id,
+                id: user.id,
                 username: user.username,
                 email: user.email,
                 role: user.role
-                // image: newUser.image
+                // image: user.image
             }
         })
     }catch(error){ 
