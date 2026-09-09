@@ -11,9 +11,7 @@ export const createProblem = async (req, res) => {
     codeSnippets,
     referenceSolutions,
   } = req.body;
-
-  // going to check the user role once again
-
+  console.log(title,"hii");
   try {
     for (const [language, solutionCode] of Object.entries(referenceSolutions)) {
       const languageId = Judge0LanguageId(language);

@@ -1,57 +1,57 @@
 import jwt from 'jsonwebtoken';
-import {db} from '../libs/db.js';
+// Make sure to import your db client
+import { db } from '../libs/db.js';
 
 export const authMiddleware = async (req, res, next) => {
-    
-    const token = req.cookies.jwt;  
-        if(!token){
-            return res.status(401).json({message: "Unauthorized"});
-        }
-    let decoded;
-    try{    
-        decoded = jwt.verify(token, process.env.JWT_SECRET);
+    try {
+        // Extract token from Cookie OR Authorization Header
+        let token = req.cookies?.jwt;
 
-        const user  = await db.user.findUnique({
-            where:{
+        if (!token && req.headers.authorization?.startsWith("Bearer ")) {
+            token = req.headers.authorization.split(" ")[1];
+        }
+
+        if (!token) {
+            return res.status(401).json({ message: "Unauthorized: No token provided" });
+        }
+
+        // Verify token
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+        // Fetch user details - Fixed `name` to `username`
+        const user = await db.user.findUnique({
+            where: {
                 id: decoded.id
             },
-            select:{
+            select: {
                 id: true,
-                // Image: true,
                 email: true,
                 role: true,
-                name: true,
+                username: true, // <-- Changed from `name: true`
             }
         });
-
 
         if (!user) {
-            return res.status(404).json({message: "user not found"});
+            return res.status(404).json({ message: "User not found" });
         }
+
         req.user = user;
         next();
-    }catch(error){
-        return res.status(401).json({message: "Invalid token"});
+    } catch (error) {
+        console.error("JWT Verification Error:", error.message);
+        return res.status(401).json({ message: "Invalid or expired token" });
     }
-    
-}
+};
 
 export const checkAdmin = async (req, res, next) => {
-    try{
-        const userId = req.user.id;
-        const user = await db.user.findUnique({
-            where:{
-                id: userId
-            },
-            select:{   
-                role: true
-            }
-        });
-        if(!user||user.role !== "ADMIN"){
-            return res.status(403).json({message: "Forbidden-do not have admin privileges"});
+    try {
+        // req.user was already populated by authMiddleware with 'role' included
+        if (!req.user || req.user.role !== "ADMIN") {
+            return res.status(403).json({ message: "Forbidden - Requires admin privileges" });
         }
+        
         next();
-    }catch(error){
-        return res.status(500).json({message: "error checking admin privileges"});
+    } catch (error) {
+        return res.status(500).json({ message: "Error checking admin privileges" });
     }
-}
+};

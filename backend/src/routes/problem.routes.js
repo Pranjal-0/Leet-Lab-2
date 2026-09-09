@@ -1,6 +1,6 @@
 import express from "express";
 import { authMiddleware, checkAdmin } from "../middleware/auth.middleware.js";;
-import{createProblem,getAllProblems,getProblemById,updateProblem,deleteProblem,getAllProblemsSolvedByUser} from "../controllers/probelm.controller.js";
+import{createProblem,getAllProblems,getProblemById,updateProblem,deleteProblem,getAllProblemsSolvedByUser} from "../controllers/problem.controller.js";
 
 
 
